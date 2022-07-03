@@ -28,7 +28,12 @@
       }
 
       function onSuccess(top10data) {
-        var c = pieChart(top10data);
+        console.log("top10data:"+JSON.stringify(top10data));
+        for (const key in top10data) {
+          top10data[key].sender = encodeLtGtSign(top10data[key].sender);
+        }
+
+        const c = pieChart(top10data);
         c.render();
 
         constructTable('#table',top10data);
@@ -138,10 +143,16 @@
         };
       }
 
+      function encodeLtGtSign(data) {
+        if (typeof data === 'string') {
+          data = data.replace('<','&lt;').replace('>','&gt;');
+        }
+        return data;
+      }
 
       // Convert data to table
       function constructTable(selector, data) {
-			
+      
         // Getting the all column names
         var cols = Headers(data, selector);
 
@@ -155,7 +166,8 @@
             // If there is any key, which is matching
             // with the column name
             if (val == null) val = "";
-              row.append($('<td/>').html(val));
+            
+            row.append($('<td/>').html(val));
           }
           
           // Adding each row to the table
@@ -183,7 +195,7 @@
         // Appending the header to the table
         $(selector).append(header);
           return columns;
-      }	
+      } 
 
     </script>
   </body>

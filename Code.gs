@@ -121,11 +121,14 @@ function getGmailSenders_custNum(numberOfMail_arg, gmailQuery_arg) {
   }
 
   for (let i = 0; i < numberOfMail_arg; i++) {
-    const sender = threads[i].getMessages()[0].getFrom(); // Get first message
-    sendersArr.push(sender); 
+    let sender = threads[i].getMessages()[0].getFrom(); // Get first message
+    sender = sender.replace(/"/g, '');                  //remove depulicate "
+    sendersArr.push(sender);
   }
+  
   return sendersArr;
 }
+
 
 function saveData(data, spreadsheetId) {
   // Logger.log("top10data:"+JSON.stringify(data));
