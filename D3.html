@@ -13,20 +13,25 @@
     </style>
   </head>
   <body>
-    <p>Gmail inbox 前<span id="num"></span>封信中 寄信次數最高Top10 統計</p>
-    <p id="loading123">Loading...</p>
+    <h1>Gmail Insight</h1>
+    <p>Gmail query-> <span id="gmailQuery"></span></p>
+    <p>Gmail 前<span id="num"></span>封信中 寄信次數最高Top10 統計</p>
+    <p id="loading">Loading...</p>
     <table align = "left"
       id="table" border="1">
     </table>
     <script>
       
+      // Print title
       getNumberOfMail();
-      runAndGet();
+      getGmailQuery();
 
-      function runAndGet(){
+      //Run gmail api statistics
+      runCodegsMain();
+
+      function runCodegsMain(){
         google.script.run.withFailureHandler(onFailure).withSuccessHandler(onSuccess).main();
       }
-
       function onSuccess(top10data) {
         console.log("top10data:"+JSON.stringify(top10data));
         for (const key in top10data) {
@@ -39,66 +44,48 @@
         constructTable('#table',top10data);
         setText('');
       }
-
       function onFailure(error) {
         setText("ERROR: " + error.message);
       }
 
       function setText(text){
-        document.getElementById("loading123").innerHTML = text;
+        document.getElementById("loading").innerHTML = text;
       }
 
-      
-      function getNumberOfMail(){
-        google.script.run.withFailureHandler(onFailure1).withSuccessHandler(onSuccess1).getNumberOfMail();
-      }
-
-      function onSuccess1(num) {
-        document.getElementById("num").innerHTML = num;
-      }
-
-      function onFailure1(error) {
-        console.log(error.message);
-      }
-      
-      
-        
       function pieChart(dataInput) {
-        var that = {};
+        let that = {};
         that.render = function() {
 
           //Step 1: Dataset
-          var data  = dataInput;
+          let data  = dataInput;
 
           //Step 3: Set SVG container and dimensions
-          var canvas = d3.select("body").append("svg")
-                    .attr("width", 500)
-                    .attr("height", 500);
+          const canvas = d3.select("body").append("svg")
+                    .attr("width", 280)
+                    .attr("height", 280);
 
-          var group = canvas.append("g")
-                      .attr("transform", "translate(200, 200)");
+          const group = canvas.append("g")
+                      .attr("transform", "translate(140, 140)");
 
           
           //Step 4: Set scale
-          var color = d3.scale.ordinal()
+          const color = d3.scale.ordinal()
                         .range(["#6D6875", "#B5838D", "#E5989B", "#FFB4A2", "#FFCDB2"]);
 
 
           //Step 5: Pie generator
-          // var pie = d3.layout.pie()
-          //           .value(function(d){return d;});
-          var pie = d3.layout.pie()
+          const pie = d3.layout.pie()
                     .value(function(d){return d.count;});
 
           //Step 6: Fill chart
-          var r = 100;
-          var arc = d3.svg.arc()
+          const r = 100;
+          const arc = d3.svg.arc()
                     .innerRadius(0)
                     .outerRadius(r);
 
           const tooltip = setTooltip('pie');
 
-          var arcs = group.selectAll(".arc")
+          let arcs = group.selectAll(".arc")
                       .data(pie(data))
                       .enter()
                       .append("g")
@@ -109,8 +96,9 @@
               .attr("fill",function(d,i){return color(i);})
               .call(tooltip)
               .on('mouseover', tooltip.show)
-              .on('mouseout', tooltip.hide);
-
+              .on('mouseout', tooltip.hide)
+              .on("click", function(d) {openGmailQuery(d)});
+              
 
           // //Step 7: Add labels
           // arcs.append("text")
@@ -132,7 +120,7 @@
           case 'pie': {
             tooltip.html(
               d => `
-                <div class="date">${d.data.sender}</div>
+                <div class="sender">${d.data.sender}</div>
                 <div>
                   寄信數 <span>${d.data.count}</span>
                 </div>
@@ -141,6 +129,20 @@
             return tooltip;
           }
         };
+      }
+
+      function openGmailQuery(d) {
+        const gmailSearchUrl = 'https://mail.google.com/mail/u/0/#search/';
+        const custQuery = encodeURIComponent($("#gmailQuery").text());
+
+        // Get clean sender mail
+        let sender = d.data.sender;
+        sender = sender.split('&lt;');
+        sender = sender[1].split('&gt');
+        let senderMail = sender[0];
+        let senderMailQuery = ' from:' + senderMail;
+
+        window.open(gmailSearchUrl + custQuery + senderMailQuery);
       }
 
       function encodeLtGtSign(data) {
@@ -154,14 +156,14 @@
       function constructTable(selector, data) {
       
         // Getting the all column names
-        var cols = Headers(data, selector);
+        const cols = Headers(data, selector);
 
         // Traversing the JSON data
-        for (var i = 0; i < data.length; i++) {
-          var row = $('<tr/>');
-          for (var colIndex = 0; colIndex < cols.length; colIndex++)
+        for (let i = 0; i < data.length; i++) {
+          let row = $('<tr/>');
+          for (let colIndex = 0; colIndex < cols.length; colIndex++)
           {
-            var val = data[i][cols[colIndex]];
+            let val = data[i][cols[colIndex]];
             
             // If there is any key, which is matching
             // with the column name
@@ -176,13 +178,13 @@
       }
       
       function Headers(data, selector) {
-        var columns = [];
-        var header = $('<tr/>');
+        let columns = [];
+        let header = $('<tr/>');
         
-        for (var i = 0; i < data.length; i++) {
-          var row = data[i];
+        for (let i = 0; i < data.length; i++) {
+          let row = data[i];
           
-          for (var k in row) {
+          for (let k in row) {
             if ($.inArray(k, columns) == -1) {
               columns.push(k);
               
@@ -195,7 +197,31 @@
         // Appending the header to the table
         $(selector).append(header);
           return columns;
-      } 
+      }
+
+      
+      function getNumberOfMail(){
+        google.script.run.withFailureHandler(onFailure1).withSuccessHandler(onSuccess1).getNumberOfMail();
+      }
+      function onSuccess1(num) {
+        document.getElementById("num").innerHTML = num;
+      }
+      function onFailure1(error) {
+        console.log(error.message);
+      }
+
+
+      function getGmailQuery(){
+        google.script.run.withFailureHandler(onFailure2).withSuccessHandler(onSuccess2).getGmailQuery();
+      }
+      function onSuccess2(gmailQuery) {
+        document.getElementById("gmailQuery").innerHTML = gmailQuery;
+      }
+      function onFailure2(error) {
+        console.log(error.message);
+      }
+
+      
 
     </script>
   </body>

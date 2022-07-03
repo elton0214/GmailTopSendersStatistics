@@ -10,7 +10,7 @@ function doGet() {
 
 
 // Parameters Setting
-const numberOfMail       = 30;      // if 99999 then regard as all mails
+const numberOfMail       = 100;      // if 99999 then regard as all mails
 const numberOfTopSenders = 10;
 const foldername         = 'Temp';  // folder to place the sheet of static result
 const lineNotifyToken    = '*************';
@@ -23,14 +23,22 @@ const category = ' category:' + 'promotions'; // primary,social,promotions,updat
 
 
 function main(){
-  let top10data=[];
-  
+  const gmailQuery = getGmailQuery();
+
+  let top10data = getGmailTopSendersStatistics(gmailQuery);
+  return top10data;
+}
+
+
+//*** Custormize your gmailQuery here ***
+function getGmailQuery(){
+  let gmailQuery;
+
   nDaysAgo += getNDaysAgo_Date(60);
-  const gmailQuery = category + nDaysAgo; // e.g. gmailQuery = subject + isunread + category;
+  gmailQuery = category + nDaysAgo; // e.g. gmailQuery = subject + isunread + category;
   Logger.log('gmailQuery: ' + gmailQuery);
 
-  top10data = getGmailTopSendersStatistics(gmailQuery);
-  return top10data;
+  return gmailQuery
 }
 
 
