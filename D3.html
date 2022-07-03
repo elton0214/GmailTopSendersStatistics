@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <!-- Step 2: D3 -->
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script src="https://unpkg.com/d3-v6-tip@1.0.6/build/d3-v6-tip.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <style>
+      .bars{
+          fill:steelblue;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Gmail inbox 前<span id="num"></span>封信中 寄信次數最高Top10 統計</p>
+    <p id="loading123">Loading...</p>
+    <table align = "left"
+      id="table" border="1">
+    </table>
+    <script>
+      
+      getNumberOfMail();
+      runAndGet();
+
+      function runAndGet(){
+        google.script.run.withFailureHandler(onFailure).withSuccessHandler(onSuccess).main();
+      }
+
+      function onSuccess(top10data) {
+        var c = pieChart(top10data);
+        c.render();
+
+        constructTable('#table',top10data);
+        setText('');
+      }
+
+      function onFailure(error) {
+        setText("ERROR: " + error.message);
+      }
+
+      function setText(text){
+        document.getElementById("loading123").innerHTML = text;
+      }
+
+      
+      function getNumberOfMail(){
+        google.script.run.withFailureHandler(onFailure1).withSuccessHandler(onSuccess1).getNumberOfMail();
+      }
+
+      function onSuccess1(num) {
+        document.getElementById("num").innerHTML = num;
+      }
+
+      function onFailure1(error) {
+        console.log(error.message);
+      }
+      
+      
+        
+      function pieChart(dataInput) {
+        var that = {};
+        that.render = function() {
+
+          //Step 1: Dataset
+          var data  = dataInput;
+
+          //Step 3: Set SVG container and dimensions
+          var canvas = d3.select("body").append("svg")
+                    .attr("width", 500)
+                    .attr("height", 500);
+
+          var group = canvas.append("g")
+                      .attr("transform", "translate(200, 200)");
+
+          
+          //Step 4: Set scale
+          var color = d3.scale.ordinal()
+                        .range(["#6D6875", "#B5838D", "#E5989B", "#FFB4A2", "#FFCDB2"]);
+
+
+          //Step 5: Pie generator
+          // var pie = d3.layout.pie()
+          //           .value(function(d){return d;});
+          var pie = d3.layout.pie()
+                    .value(function(d){return d.count;});
+
+          //Step 6: Fill chart
+          var r = 100;
+          var arc = d3.svg.arc()
+                    .innerRadius(0)
+                    .outerRadius(r);
+
+          const tooltip = setTooltip('pie');
+
+          var arcs = group.selectAll(".arc")
+                      .data(pie(data))
+                      .enter()
+                      .append("g")
+                      .attr("class","arc");
+
+          arcs.append("path")
+              .attr("d", arc)
+              .attr("fill",function(d,i){return color(i);})
+              .call(tooltip)
+              .on('mouseover', tooltip.show)
+              .on('mouseout', tooltip.hide);
+
+
+          // //Step 7: Add labels
+          // arcs.append("text")
+          //     .attr("transform", function(d){return "translate(" + arc.centroid(d) +")";})
+          //     .text(function(d){return d.data.sender;})
+          //     .style("font-family", "arial")
+          //     .style("font-size", 15);
+
+        };
+        return that;
+      }
+
+      function setTooltip(chart_type) {
+        const tooltip = d3.tip()
+          .attr('class', 'd3-tip')
+          .offset([-14, 0]);
+
+        switch (chart_type) {
+          case 'pie': {
+            tooltip.html(
+              d => `
+                <div class="date">${d.data.sender}</div>
+                <div>
+                  寄信數 <span>${d.data.count}</span>
+                </div>
+              `
+            )
+            return tooltip;
+          }
+        };
+      }
+
+
+      // Convert data to table
+      function constructTable(selector, data) {
+			
+        // Getting the all column names
+        var cols = Headers(data, selector);
+
+        // Traversing the JSON data
+        for (var i = 0; i < data.length; i++) {
+          var row = $('<tr/>');
+          for (var colIndex = 0; colIndex < cols.length; colIndex++)
+          {
+            var val = data[i][cols[colIndex]];
+            
+            // If there is any key, which is matching
+            // with the column name
+            if (val == null) val = "";
+              row.append($('<td/>').html(val));
+          }
+          
+          // Adding each row to the table
+          $(selector).append(row);
+        }
+      }
+      
+      function Headers(data, selector) {
+        var columns = [];
+        var header = $('<tr/>');
+        
+        for (var i = 0; i < data.length; i++) {
+          var row = data[i];
+          
+          for (var k in row) {
+            if ($.inArray(k, columns) == -1) {
+              columns.push(k);
+              
+              // Creating the header
+              header.append($('<th/>').html(k));
+            }
+          }
+        }
+        
+        // Appending the header to the table
+        $(selector).append(header);
+          return columns;
+      }	
+
+    </script>
+  </body>
+</html>
+
+
